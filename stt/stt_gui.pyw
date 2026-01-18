@@ -16,6 +16,7 @@ venv_path = os.path.join(os.path.expanduser("~"), ".claude", "plugins", "cache",
 sys.path.insert(0, venv_path)
 
 import sounddevice as sd
+from pynput import mouse
 
 # Configuration
 SAMPLE_RATE = 16000
@@ -77,6 +78,16 @@ class STTApp:
 
         # Pré-charger le modèle en arrière-plan
         threading.Thread(target=self._preload_model, daemon=True).start()
+
+        # Listener global pour le clic molette (bouton du milieu)
+        self.mouse_listener = mouse.Listener(on_click=self._on_mouse_click)
+        self.mouse_listener.start()
+
+    def _on_mouse_click(self, x, y, button, pressed):
+        """Gère les clics souris globaux - clic molette = toggle record"""
+        if button == mouse.Button.middle and pressed:
+            # Utiliser root.after pour exécuter dans le thread principal
+            self.root.after(0, self.toggle_recording)
 
     def _capture_my_hwnd(self):
         """Capture le HWND de notre propre fenêtre GUI"""
@@ -186,7 +197,7 @@ class STTApp:
         close_btn.pack(side='left', padx=5)
 
         # Status label
-        self.status_var = tk.StringVar(value="Cliquez pour enregistrer")
+        self.status_var = tk.StringVar(value="Clic molette ou bouton pour enregistrer")
         self.status_label = tk.Label(main_frame, textvariable=self.status_var,
                                     font=('Segoe UI', 9),
                                     fg='#888', bg='#1a1a2e')
@@ -353,7 +364,7 @@ class STTApp:
 
             threading.Thread(target=self._transcribe, daemon=True).start()
         else:
-            self.status_var.set("Cliquez pour enregistrer")
+            self.status_var.set("Clic molette ou bouton pour enregistrer")
 
     def _transcribe(self):
         """Transcrit l'audio et colle dans la fenêtre cible"""
@@ -414,6 +425,13 @@ class STTApp:
             widget.bind("<Button-1>", self._on_drag_start)
             widget.bind("<B1-Motion>", self._on_drag_motion)
 
+        # Cleanup propre à la fermeture
+        def on_close():
+            if self.mouse_listener:
+                self.mouse_listener.stop()
+            self.root.destroy()
+
+        self.root.protocol("WM_DELETE_WINDOW", on_close)
         self.root.mainloop()
 
     def _on_drag_start(self, event):
