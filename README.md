@@ -16,6 +16,19 @@ Redémarrer le terminal après installation.
 
 ## Contenu
 
+### [claude-code/](./claude-code/) - Configuration Claude Code
+
+Configuration complète de Claude Code :
+
+| Composant | Description |
+|-----------|-------------|
+| **settings.json** | Permissions, hooks, plugins |
+| **CLAUDE.md** | Instructions globales |
+| **Statusline** | Barre de statut Git |
+| **Hooks** | Validation des commandes |
+| **Rules** | Délégation GPT (Codex) |
+| **Sons** | Notifications audio |
+
 ### [terminal/](./terminal/) - Configuration Terminal Complète
 
 Configuration PowerShell avec tous les outils modernes :
@@ -56,14 +69,22 @@ sttstop   # Arrête tout
 
 ```
 AmarTools/
+├── claude-code/
+│   ├── settings.json          # Config principale
+│   ├── CLAUDE.md              # Instructions globales
+│   ├── statusline-git.ps1     # Script statusline
+│   ├── install.ps1            # Installation
+│   ├── scripts/               # Hooks de validation
+│   ├── rules/                 # Rules délégation GPT
+│   └── song/                  # Sons notification
 ├── terminal/
-│   ├── Microsoft.PowerShell_profile.ps1  # Profil complet
-│   ├── install.ps1                       # Installation auto
+│   ├── Microsoft.PowerShell_profile.ps1
+│   ├── install.ps1
 │   └── README.md
 ├── stt/
-│   ├── stt_gui.pyw                       # GUI STT
-│   ├── profile-functions.ps1             # Fonctions PowerShell STT
-│   ├── install.ps1                       # Installation STT
+│   ├── stt_gui.pyw
+│   ├── profile-functions.ps1
+│   ├── install.ps1
 │   └── README.md
 └── README.md
 ```

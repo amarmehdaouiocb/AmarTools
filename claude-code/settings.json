@@ -1,0 +1,124 @@
+{
+  "env": {
+    "ENABLE_TOOL_SEARCH": "true"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(find:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(less:*)",
+      "Bash(more:*)",
+      "Bash(type:*)",
+      "Bash(tree:*)",
+      "Bash(file:*)",
+      "Bash(wc:*)",
+      "Bash(stat:*)",
+      "Bash(du:*)",
+      "Bash(df:*)",
+      "Bash(pwd:*)",
+      "Bash(which:*)",
+      "Bash(where:*)",
+      "Bash(whereis:*)",
+      "Bash(locate:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(fd:*)",
+      "Bash(Get-Content:*)",
+      "Bash(Get-ChildItem:*)",
+      "Bash(Get-Item:*)",
+      "Bash(Get-Location:*)",
+      "Bash(Get-Command:*)",
+      "Bash(Test-Path:*)",
+      "Bash(Select-String:*)",
+      "Bash(cd:*)",
+      "Bash(Set-Location:*)",
+      "Bash(Push-Location:*)",
+      "Bash(Pop-Location:*)",
+      "Bash(pushd:*)",
+      "Bash(popd:*)",
+      "Bash(z:*)",
+      "Bash(grepai:*)",
+      "Bash(grepai search:*)",
+      "Bash(grepai trace:*)",
+      "Bash(grepai status:*)",
+      "Bash(grepai watch:*)",
+      "Bash(grepai init:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git branch:*)",
+      "Bash(git show:*)",
+      "Bash(npm run build:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(claude mcp remove:*)",
+      "Bash(claude mcp list:*)",
+      "WebSearch",
+      "WebFetch(domain:supabase.com)"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "acceptEdits"
+  },
+  "model": "opus",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun C:\\Users\\amarm\\.claude\\scripts\\command-validator\\src\\cli.ts"
+          },
+          {
+            "type": "command",
+            "command": "bun C:\\Users\\amarm\\.claude\\scripts\\quality-checks\\src\\cli.ts"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -c 'Add-Type -AssemblyName presentationCore; $m = New-Object System.Windows.Media.MediaPlayer; $m.Open(\"C:\\Users\\amarm\\.claude\\song\\finish.mp3\"); $m.Volume = 0.1; $m.Play(); Start-Sleep -Seconds 3'"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -c 'Add-Type -AssemblyName presentationCore; $m = New-Object System.Windows.Media.MediaPlayer; $m.Open(\"C:\\Users\\amarm\\.claude\\song\\need-human.mp3\"); $m.Volume = 0.1; $m.Play(); Start-Sleep -Seconds 3'"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "powershell -NoProfile -ExecutionPolicy Bypass -File C:\\Users\\amarm\\.claude\\statusline-git.ps1",
+    "padding": 0
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "frontend-excellence@dotclaude-plugins": false,
+    "frontend-developer@cc-marketplace": false,
+    "base@aiblueprint": true,
+    "document-skills@anthropic-agent-skills": true,
+    "claude-delegator@jarrodwatts-claude-delegator": true,
+    "claude-stt@jarrodwatts-claude-stt": true
+  },
+  "language": "french",
+  "alwaysThinkingEnabled": true
+}

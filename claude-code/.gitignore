@@ -1,0 +1,14 @@
+# Node modules
+node_modules/
+bun.lockb
+
+# Logs
+*.log
+data/*.log
+
+# Cache
+.cache/
+
+# IDE
+.idea/
+.vscode/
