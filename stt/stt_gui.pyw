@@ -21,7 +21,7 @@ import sounddevice as sd
 SAMPLE_RATE = 16000
 CHANNELS = 1
 SILENCE_THRESHOLD = 0.008  # Seuil de silence
-SILENCE_DURATION = 2.0     # Secondes de silence avant arrêt auto
+SILENCE_DURATION = 1.0     # Secondes de silence avant arrêt auto
 CHUNK_SIZE = 1024
 
 # Windows API pour focus et moniteurs
