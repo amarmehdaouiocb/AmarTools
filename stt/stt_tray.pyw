@@ -1,5 +1,11 @@
 """
 STT Tray - Daemon systray avec visualisation dans la statusline Claude Code
+
+Variables d'environnement :
+- CLAUDE_STT_WHISPER_DEVICE : "cuda" (défaut) ou "cpu"
+- CLAUDE_STT_WHISPER_COMPUTE_TYPE : "float16" (défaut), "int8", "int8_float16"
+- CLAUDE_STT_WHISPER_MODEL : "large-v3" (défaut), "medium", "small", "base", "tiny"
+- CLAUDE_STT_UNLOAD_DELAY : secondes avant déchargement auto du modèle (0 = jamais, défaut)
 """
 import threading
 import numpy as np
@@ -26,6 +32,7 @@ CHANNELS = 1
 SILENCE_THRESHOLD = 0.008  # Seuil de silence
 SILENCE_DURATION = 1.0     # Secondes de silence avant arrêt auto
 CHUNK_SIZE = 1024
+UNLOAD_DELAY = int(os.environ.get("CLAUDE_STT_UNLOAD_DELAY", "0"))  # 0 = jamais décharger
 
 # Fichier de prompt pour Whisper (vocabulaire technique)
 PROMPT_FILE = os.path.join(os.path.expanduser("~"), ".claude", "plugins", "claude-stt", "prompt.txt")
@@ -33,14 +40,8 @@ PROMPT_FILE = os.path.join(os.path.expanduser("~"), ".claude", "plugins", "claud
 # Fichier de statut pour la statusline Claude Code
 STATUS_FILE = os.path.join(os.path.expanduser("~"), ".claude", "plugins", "claude-stt", "status")
 
-# Windows API pour focus et titre
+# Windows API pour focus
 user32 = ctypes.windll.user32
-kernel32 = ctypes.windll.kernel32
-
-# Fonctions pour manipuler le titre de la fenêtre
-GetWindowTextW = user32.GetWindowTextW
-GetWindowTextLengthW = user32.GetWindowTextLengthW
-SetWindowTextW = user32.SetWindowTextW
 
 
 class STTTray:
@@ -68,10 +69,7 @@ class STTTray:
         self.last_external_window = initial_hwnd
         self.running = True
         self.status = "idle"  # idle, loading, recording, transcribing, error
-
-        # Titre du terminal (pour indicateur visuel)
-        self.original_title = None
-        self.title_window = None
+        self.last_model_use = 0  # Timestamp dernière utilisation du modèle
 
         # Whisper model (lazy load)
         self._model = None
@@ -91,57 +89,10 @@ class STTTray:
         # Pré-charger le modèle en arrière-plan
         threading.Thread(target=self._preload_model, daemon=True).start()
 
-    def _get_window_title(self, hwnd):
-        """Récupère le titre d'une fenêtre Windows"""
-        if not hwnd:
-            return None
-        try:
-            length = GetWindowTextLengthW(hwnd)
-            if length == 0:
-                return None
-            buffer = ctypes.create_unicode_buffer(length + 1)
-            GetWindowTextW(hwnd, buffer, length + 1)
-            return buffer.value
-        except Exception:
-            return None
-
-    def _set_window_title(self, hwnd, title):
-        """Définit le titre d'une fenêtre Windows"""
-        if not hwnd or not title:
-            return False
-        try:
-            SetWindowTextW(hwnd, title)
-            return True
-        except Exception:
-            return False
-
-    def _update_terminal_title(self):
-        """Met à jour le titre du terminal selon l'état STT"""
-        if not self.title_window or not self.original_title:
-            return
-
-        if self.status == "recording":
-            new_title = f"🎤 Recording... | {self.original_title}"
-        elif self.status == "transcribing":
-            new_title = f"⏳ Transcribing... | {self.original_title}"
-        else:
-            # Restaurer le titre original
-            new_title = self.original_title
-
-        self._set_window_title(self.title_window, new_title)
-
-    def _save_terminal_title(self):
-        """Sauvegarde le titre actuel du terminal cible"""
-        if self.last_external_window:
-            self.title_window = self.last_external_window
-            self.original_title = self._get_window_title(self.title_window)
-
-    def _restore_terminal_title(self):
-        """Restaure le titre original du terminal"""
-        if self.title_window and self.original_title:
-            self._set_window_title(self.title_window, self.original_title)
-            self.original_title = None
-            self.title_window = None
+        # Thread de déchargement auto si configuré
+        if UNLOAD_DELAY > 0:
+            self.unload_thread = threading.Thread(target=self._unload_loop, daemon=True)
+            self.unload_thread.start()
 
     def _load_prompt(self):
         """Charge le fichier prompt.txt pour le vocabulaire technique Whisper"""
@@ -281,7 +232,7 @@ class STTTray:
                     pass
 
     def _set_status(self, status):
-        """Change l'état et met à jour l'icône + fichier status + titre terminal"""
+        """Change l'état et met à jour l'icône + fichier status"""
         self.status = status
         self._update_icon()
 
@@ -292,12 +243,6 @@ class STTTray:
             self._write_status("transcribing")
         else:
             self._write_status(None)  # Supprimer le fichier
-
-        # Mettre à jour le titre du terminal
-        if status in ("recording", "transcribing"):
-            self._update_terminal_title()
-        elif status == "idle" and self.original_title:
-            self._restore_terminal_title()
 
     def _track_focus_loop(self):
         """Surveille la fenêtre active en boucle"""
@@ -311,6 +256,38 @@ class STTTray:
                     pass
             time.sleep(0.1)
 
+    def _unload_loop(self):
+        """Surveille l'inactivité et décharge le modèle si nécessaire"""
+        while self.running:
+            if (self._model is not None and
+                self.last_model_use > 0 and
+                not self.is_recording and
+                not self.transcribing and
+                not self.loading_model):
+                idle_time = time.time() - self.last_model_use
+                if idle_time >= UNLOAD_DELAY:
+                    self._unload_model()
+            time.sleep(10)  # Vérifier toutes les 10 secondes
+
+    def _unload_model(self):
+        """Décharge le modèle pour libérer la mémoire"""
+        if self._model is not None:
+            print(f"Déchargement du modèle après {UNLOAD_DELAY}s d'inactivité...")
+            del self._model
+            self._model = None
+            self.last_model_use = 0
+            # Forcer le garbage collector
+            import gc
+            gc.collect()
+            # Libérer la mémoire CUDA si disponible
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except ImportError:
+                pass
+            print("Modèle déchargé, mémoire libérée.")
+
     def _preload_model(self):
         """Pré-charge le modèle Whisper au démarrage"""
         self._set_status("loading")
@@ -318,7 +295,16 @@ class STTTray:
             from faster_whisper import WhisperModel
             device = os.environ.get("CLAUDE_STT_WHISPER_DEVICE", "cuda")
             compute_type = os.environ.get("CLAUDE_STT_WHISPER_COMPUTE_TYPE", "float16")
-            self._model = WhisperModel("large-v3", device=device, compute_type=compute_type)
+            model_size = os.environ.get("CLAUDE_STT_WHISPER_MODEL", "large-v3")
+            # Optimisations RAM : réduire threads CPU et workers
+            self._model = WhisperModel(
+                model_size,
+                device=device,
+                compute_type=compute_type,
+                cpu_threads=1,      # Réduit l'empreinte RAM
+                num_workers=1,      # Un seul worker
+            )
+            self.last_model_use = time.time()
             self._set_status("idle")
         except Exception as e:
             print(f"Erreur chargement modèle: {e}")
@@ -333,7 +319,16 @@ class STTTray:
                 from faster_whisper import WhisperModel
                 device = os.environ.get("CLAUDE_STT_WHISPER_DEVICE", "cuda")
                 compute_type = os.environ.get("CLAUDE_STT_WHISPER_COMPUTE_TYPE", "float16")
-                self._model = WhisperModel("large-v3", device=device, compute_type=compute_type)
+                model_size = os.environ.get("CLAUDE_STT_WHISPER_MODEL", "large-v3")
+                # Optimisations RAM : réduire threads CPU et workers
+                self._model = WhisperModel(
+                    model_size,
+                    device=device,
+                    compute_type=compute_type,
+                    cpu_threads=1,      # Réduit l'empreinte RAM
+                    num_workers=1,      # Un seul worker
+                )
+                self.last_model_use = time.time()
                 self._set_status("idle")
             except Exception as e:
                 print(f"Erreur chargement modèle: {e}")
@@ -370,9 +365,6 @@ class STTTray:
 
         # Mémoriser la fenêtre cible
         self.target_window = self.last_external_window
-
-        # Sauvegarder le titre du terminal pour l'indicateur visuel
-        self._save_terminal_title()
 
         self.is_recording = True
         self.audio_data = []
@@ -453,6 +445,7 @@ class STTTray:
         finally:
             self.audio_data = []
             self.transcribing = False
+            self.last_model_use = time.time()  # Marquer dernière utilisation
             self._set_status("idle")
 
     def _paste_text(self, text):
@@ -481,7 +474,6 @@ class STTTray:
         """Quitte l'application"""
         self.running = False
         self._write_status(None)  # Supprimer le fichier status
-        self._restore_terminal_title()  # Restaurer le titre original
         if self.mouse_listener:
             self.mouse_listener.stop()
         icon.stop()

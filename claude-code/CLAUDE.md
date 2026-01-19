@@ -10,16 +10,96 @@ Prefer small, verifiable iterations over big risky changes.
 
 ---
 
-## 1) Environment (Windows + Cursor terminal)
-- I develop on **Windows** using the **integrated terminal in Cursor**.
-- Default shell: **PowerShell**.
-- **Do not write bash/WSL commands** unless I explicitly ask for bash.
-- When giving commands, ensure they work in PowerShell (escaping, paths, etc.).
+## 1) Environment (Windows + Claude Code bash)
+- I develop on **Windows** using **PowerShell 7** or **Cursor terminal**.
+- **Claude Code uses bash internally** (Git Bash/MSYS2), regardless of the parent shell.
+- Write **bash-compatible commands** for the Bash tool (not PowerShell cmdlets).
 
-### Shell requirement
-- Use PowerShell commands only.
-- Do not run tasks under Bash/WSL/Git-Bash unless I explicitly request it.
-- If the tool is about to run a command in a non-PowerShell shell, STOP and ask.
+### Shell behavior in Claude Code
+- Claude Code's `Bash` tool runs commands in `/usr/bin/bash` (MSYS2/MinGW64).
+- PowerShell cmdlets (`Get-Content`, `Get-ChildItem`, etc.) will NOT work.
+- Use Unix-style paths: `/c/Users/amarm/` instead of `C:\Users\amarm\`
+- Most CLI tools work the same: `git`, `node`, `npm`, `bun`, `grepai`, etc.
+
+### Path conventions
+| Context | Format | Example |
+|---------|--------|---------|
+| Claude Code Bash | Unix-style | `/c/Users/amarm/SaaS/project` |
+| Outside Claude (PowerShell) | Windows-style | `C:\Users\amarm\SaaS\project` |
+
+### What works in Claude Code Bash
+- Standard Unix commands: `ls`, `cat`, `grep`, `find`, `cd`, `pwd`, `echo`
+- Cross-platform CLI tools: `git`, `node`, `npm`, `bun`, `pnpm`, `grepai`
+- Windows executables via PATH (they get called correctly)
+
+### Permissions et commandes composées
+Le hook `command-validator` auto-approuve les commandes composées (`|`, `&&`, `;`) si **toutes** les parties sont des commandes safe.
+
+**Commandes Bash safe (auto-approuvées même avec pipes/chaînages) :**
+`ls`, `dir`, `pwd`, `whoami`, `date`, `echo`, `cat`, `head`, `tail`, `grep`, `find`, `wc`, `sort`, `uniq`, `cut`, `awk`, `sed`, `git`, `npm`, `pnpm`, `node`, `bun`, `python`, `pip`, `source`, `cd`, `cp`, `mv`, `mkdir`, `touch`, `ln`, `psql`, `mysql`, `sqlite3`, `mongo`
+
+| Commande | Résultat |
+|----------|----------|
+| `ls /path` | ✅ Auto-approuvé |
+| `ls /path \| head -5` | ✅ Auto-approuvé (toutes safe) |
+| `cd /path && pwd && ls` | ✅ Auto-approuvé (toutes safe) |
+| `ls \| some-unknown-cmd` | ❓ Demande permission |
+
+### Exécuter PowerShell depuis Claude Code Bash — IMPORTANT
+
+**Problème** : Bash interprète `$_`, `$env:`, etc. AVANT de passer la commande à PowerShell → erreurs fréquentes.
+
+**Solutions par ordre de préférence :**
+
+1. **Utiliser des commandes natives Windows/bash** (pas besoin de PowerShell) :
+   ```bash
+   # Processus
+   tasklist //FO CSV                    # Liste des processus
+   taskkill //F //IM "process.exe"      # Tuer un processus
+   taskkill //F //PID 1234              # Tuer par PID
+
+   # Registre (lecture)
+   reg query "HKCU\Software\..." /v "ValueName"
+
+   # Services
+   sc query "ServiceName"
+   net stop "ServiceName"
+   ```
+
+2. **PowerShell simple sans variables** :
+   ```bash
+   powershell -NoProfile -Command "Get-Process | Select-Object Name"
+   ```
+
+3. **PowerShell avec variables → EncodedCommand** :
+   ```bash
+   # Encoder la commande en Base64 UTF-16LE :
+   # [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes('Get-Process | Where-Object { $_.Name -like "*node*" }'))
+   powershell -NoProfile -EncodedCommand "RwBlAHQALQBQAHIAbwBjAGUAcwBzAC..."
+   ```
+
+4. **Dernier recours : échapper avec `\$`** (inconsistant) :
+   ```bash
+   powershell -NoProfile -Command "Get-Process | Where-Object { \$_.Name -eq 'node' }"
+   ```
+
+**Règle** : Toujours essayer l'option 1 ou 2 d'abord. N'utiliser EncodedCommand que si nécessaire.
+
+### Outils Read, Glob, Grep — auto-approuvés
+Le hook auto-approuve aussi les outils Claude Code natifs :
+
+| Outil | Comportement |
+|-------|--------------|
+| `Read` | ✅ Auto-approuvé si le chemin est dans un répertoire safe |
+| `Glob` | ✅ Toujours auto-approuvé (read-only) |
+| `Grep` | ✅ Toujours auto-approuvé (read-only) |
+
+**Chemins safe pour Read :**
+- `C:\Users\amarm\SaaS\*` (répertoire de développement)
+- `C:\Users\amarm\.claude\*` (config Claude)
+- `C:\Users\amarm\*` (home directory)
+- Répertoire de travail courant
+- `/tmp/` et répertoires temporaires
 
 ---
 
@@ -245,10 +325,11 @@ Create branch:
 ---
 
 ## 8) Windows / nvm4w conventions
-- If a command fails, first check tool resolution & versions:
-  - `Get-Command <tool> -All`
+- If a command fails in Claude Code, check tool resolution & versions:
+  - `which <tool>` or `command -v <tool>` (bash)
   - `node -v`, `npm -v` / `pnpm -v`
-- Be explicit about paths. Do not assume WSL unless I say so.
+- Use Unix-style paths in Claude Code: `/c/Users/amarm/...`
+- For commands I run manually outside Claude, use PowerShell syntax.
 
 ---
 

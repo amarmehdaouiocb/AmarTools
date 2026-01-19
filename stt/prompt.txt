@@ -14,13 +14,25 @@ Claude, Claude Code, PowerShell, terminal, npm, pnpm, bun, node, Python, TypeScr
 # Frameworks
 React, Next.js, Vue, Supabase, Prisma, Tailwind
 
-# Commandes
+# Commandes Unix
 cd, ls, cat, grep, find, mkdir, rm, mv, cp
-stt, sttstop, sttdaemon, sttstatus
-fidelya-api
 
-# Aliases
+# Commandes Windows
+tasklist, taskkill, wmic, reg query, HKCU, HKLM, EncodedCommand
+
+# STT
+stt, sttt, sttstop, sttdaemon, sttstatus, stt_tray, stt_gui
+faster-whisper, CTranslate2, Whisper, transcription
+
+# Aliases PowerShell
 gs, gp, gf, gl, gd, gds, ll, ff
+devstop, devlist, goodnight
+
+# Hardware & Mémoire
+RAM, VRAM, GPU, CUDA, RTX, RTX 5090, cpu_threads, num_workers, float16, int8
+
+# Applications Windows
+Ollama, NordVPN, SteelSeries, WidgetBoard, OneDrive, Docker Desktop, pythonw
 
 # Projets (dossiers SaaS)
 SaaS, AmarTools, BoatAcademy, Fidelya, Fidelya-api, Fidelya-claude, Fidelya-codex
