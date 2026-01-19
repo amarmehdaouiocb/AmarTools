@@ -8,7 +8,8 @@ Interface graphique pour la transcription vocale utilisant Whisper large-v3 sur 
 - **Whisper large-v3** (le modèle le plus précis)
 - **Accélération GPU** (CUDA/RTX)
 - **Focus intelligent** : colle le texte dans le dernier terminal focusé
-- **Arrêt automatique** après 2 secondes de silence
+- **Arrêt automatique** après 1 seconde de silence
+- **Raccourci clic molette** : toggle record sans cliquer sur le bouton
 
 ## Prérequis
 
@@ -51,9 +52,18 @@ Fermez et rouvrez votre terminal PowerShell.
 1. Tapez `stt` dans le terminal
 2. Le GUI s'ouvre en haut à droite
 3. Cliquez sur le terminal où vous voulez coller le texte
-4. Cliquez sur **Record** dans le GUI
+4. **Clic molette** (ou bouton Record) pour démarrer l'enregistrement
 5. Parlez
-6. Le texte est automatiquement collé dans le terminal ciblé
+6. **Clic molette** (ou attendre 1s de silence) pour arrêter
+7. Le texte est automatiquement collé dans le terminal ciblé
+
+### Raccourcis
+
+| Action | Raccourci |
+|--------|-----------|
+| Toggle enregistrement | **Clic molette** (bouton du milieu) |
+| Démarrer/Arrêter | Bouton Record dans le GUI |
+| Arrêt automatique | 1 seconde de silence |
 
 ## Configuration
 
