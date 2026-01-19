@@ -16,3 +16,8 @@ React, Next.js, Vue, Supabase, Prisma, Tailwind
 
 # Commandes
 cd, ls, cat, grep, find, mkdir, rm, mv, cp
+stt, sttstop, sttdaemon, sttstatus
+fidelya-api
+
+# Aliases
+gs, gp, gf, gl, gd, gds, ll, ff
