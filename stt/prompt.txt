@@ -9,7 +9,7 @@ git commit, git push, git pull, git merge, git branch, git checkout, git stash, 
 API, frontend, backend, endpoint, middleware, repository, codebase, refactor, debug, deploy, build, test
 
 # Outils
-Claude Code, PowerShell, terminal, npm, pnpm, bun, node, Python, TypeScript, JavaScript
+Claude, Claude Code, PowerShell, terminal, npm, pnpm, bun, node, Python, TypeScript, JavaScript
 
 # Frameworks
 React, Next.js, Vue, Supabase, Prisma, Tailwind
