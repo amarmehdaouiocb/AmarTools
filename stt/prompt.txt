@@ -21,3 +21,7 @@ fidelya-api
 
 # Aliases
 gs, gp, gf, gl, gd, gds, ll, ff
+
+# Projets (dossiers SaaS)
+SaaS, AmarTools, BoatAcademy, Fidelya, Fidelya-api, Fidelya-claude, Fidelya-codex
+landingpage-fidelya, OnMangeQuoi, pronos-foot, scraper-immo, site-radi, StellarWave
