@@ -67,6 +67,32 @@ Fermez et rouvrez votre terminal PowerShell.
 
 ## Configuration
 
+### Vocabulaire technique (prompt.txt)
+
+Pour améliorer la reconnaissance des termes techniques, éditez le fichier :
+```
+~\.claude\plugins\claude-stt\prompt.txt
+```
+
+Format du fichier :
+- Un ou plusieurs termes par ligne, séparés par des virgules
+- Les lignes commençant par `#` sont des commentaires (ignorées)
+- Exemples : `git commit`, `API`, `TypeScript`, `Supabase`
+
+Exemple de contenu :
+```
+# Git
+git commit, git push, git pull, git merge
+
+# Dev
+API, frontend, backend, endpoint, middleware
+
+# Frameworks
+React, Next.js, Supabase, Tailwind
+```
+
+Le fichier est lu au lancement du GUI. Pour appliquer les modifications, fermez et relancez `stt`.
+
 ### Modèle Whisper
 
 Par défaut : `large-v3` sur CUDA avec float16.
@@ -78,6 +104,7 @@ Variables d'environnement optionnelles :
 ### Chemins
 
 - GUI : `~\.claude\plugins\claude-stt\stt_gui.pyw`
+- Prompt : `~\.claude\plugins\claude-stt\prompt.txt`
 - Config : `~\.claude\plugins\claude-stt\config.toml`
 - Logs : `~\.claude\plugins\claude-stt\daemon.log`
 
@@ -86,6 +113,7 @@ Variables d'environnement optionnelles :
 | Fichier | Description |
 |---------|-------------|
 | `stt_gui.pyw` | Interface graphique principale |
+| `prompt.txt` | Vocabulaire technique pour Whisper |
 | `profile-functions.ps1` | Fonctions PowerShell à ajouter au profil |
 | `install.ps1` | Script d'installation automatique |
 
