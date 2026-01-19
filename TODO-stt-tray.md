@@ -213,3 +213,40 @@ Pillow est nécessaire pour créer les icônes dynamiquement.
 - Le clic molette global fonctionne déjà avec `pynput` (à réutiliser)
 - Le code Whisper existant peut être repris tel quel
 - Garder `stt_gui.pyw` comme fallback si besoin
+
+---
+
+## 7. Optimisations mémoire (TODO)
+
+### Problème actuel
+
+Même avec `cpu_threads=1` et `num_workers=1`, le modèle `large-v3` consomme ~2 Go de RAM en plus de la VRAM (~4 Go). C'est un comportement de `faster-whisper` / CTranslate2 qui charge le modèle en RAM avant de le transférer au GPU.
+
+### Pistes d'optimisation
+
+| Option | Impact RAM | Impact qualité | Complexité |
+|--------|-----------|----------------|------------|
+| **Modèle `medium`** | -1 Go (~1 Go total) | Légère baisse | Simple |
+| **Modèle `distil-large-v3`** | -500 Mo | Similaire à large-v3 | Simple |
+| **Auto-unload après inactivité** | Libère tout après X sec | Latence rechargement ~5s | ✅ Implémenté |
+| **Lazy load** (ne pas pré-charger) | 0 Go au repos | Latence 1ère transcription | Modifier `_preload_model` |
+
+### Variables d'environnement disponibles
+
+```powershell
+# Changer de modèle (défaut: large-v3)
+$env:CLAUDE_STT_WHISPER_MODEL = "medium"  # ou "small", "distil-large-v3"
+
+# Auto-unload après 5 min d'inactivité (défaut: 0 = désactivé)
+$env:CLAUDE_STT_UNLOAD_DELAY = "300"
+
+# Forcer CPU au lieu de GPU (non recommandé)
+$env:CLAUDE_STT_WHISPER_DEVICE = "cpu"
+```
+
+### Recommandation
+
+Pour un bon compromis qualité/mémoire :
+1. Garder `large-v3` pour la qualité
+2. Activer `CLAUDE_STT_UNLOAD_DELAY=300` pour libérer après 5 min
+3. Ou passer à `distil-large-v3` si disponible (qualité similaire, moins lourd)
