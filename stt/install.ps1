@@ -23,7 +23,7 @@ $HOOKS_FILE = "$PLUGIN_CACHE\hooks\hooks.json"
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # 1. Vérifier que le plugin claude-stt est installé
-Write-Host "[1/5] Vérification du plugin claude-stt..." -ForegroundColor Yellow
+Write-Host "[1/6] Vérification du plugin claude-stt..." -ForegroundColor Yellow
 if (-not (Test-Path $PLUGIN_CACHE)) {
     if ($SkipPluginInstall) {
         Write-Host "ERREUR: Le plugin claude-stt n'est pas installé." -ForegroundColor Red
@@ -40,16 +40,29 @@ if (-not (Test-Path $PLUGIN_CACHE)) {
 Write-Host "  OK - Plugin trouvé" -ForegroundColor Green
 
 # 2. Créer le dossier STT config
-Write-Host "[2/5] Création du dossier de configuration..." -ForegroundColor Yellow
+Write-Host "[2/6] Création du dossier de configuration..." -ForegroundColor Yellow
 if (-not (Test-Path $STT_DIR)) {
     New-Item -ItemType Directory -Path $STT_DIR -Force | Out-Null
 }
 Write-Host "  OK - $STT_DIR" -ForegroundColor Green
 
-# 3. Copier le GUI
-Write-Host "[3/5] Installation du GUI STT..." -ForegroundColor Yellow
+# 3. Installer les dépendances Python pour le mode tray
+Write-Host "[3/6] Installation des dépendances Python..." -ForegroundColor Yellow
+$pipPath = Join-Path $PLUGIN_CACHE ".venv\Scripts\pip.exe"
+if (Test-Path $pipPath) {
+    & $pipPath install pystray Pillow pyperclip --quiet
+    Write-Host "  OK - pystray, Pillow, pyperclip installés" -ForegroundColor Green
+} else {
+    Write-Host "  SKIP - pip non trouvé, dépendances non installées" -ForegroundColor Yellow
+}
+
+# 4. Copier le GUI et le daemon tray
+Write-Host "[4/6] Installation des scripts STT..." -ForegroundColor Yellow
 $guiSource = Join-Path $SCRIPT_DIR "stt_gui.pyw"
 $guiDest = Join-Path $STT_DIR "stt_gui.pyw"
+$traySource = Join-Path $SCRIPT_DIR "stt_tray.pyw"
+$trayDest = Join-Path $STT_DIR "stt_tray.pyw"
+
 if (Test-Path $guiSource) {
     Copy-Item $guiSource $guiDest -Force
     Write-Host "  OK - stt_gui.pyw installé" -ForegroundColor Green
@@ -58,8 +71,15 @@ if (Test-Path $guiSource) {
     exit 1
 }
 
-# 4. Désactiver le hook de démarrage automatique
-Write-Host "[4/5] Désactivation du démarrage automatique du daemon..." -ForegroundColor Yellow
+if (Test-Path $traySource) {
+    Copy-Item $traySource $trayDest -Force
+    Write-Host "  OK - stt_tray.pyw installé" -ForegroundColor Green
+} else {
+    Write-Host "  ATTENTION: stt_tray.pyw non trouvé (mode tray non disponible)" -ForegroundColor Yellow
+}
+
+# 5. Désactiver le hook de démarrage automatique
+Write-Host "[5/6] Désactivation du démarrage automatique du daemon..." -ForegroundColor Yellow
 if (Test-Path $HOOKS_FILE) {
     $hooksContent = '{ "hooks": {} }'
     Set-Content -Path $HOOKS_FILE -Value $hooksContent -Encoding UTF8
@@ -68,8 +88,8 @@ if (Test-Path $HOOKS_FILE) {
     Write-Host "  SKIP - Fichier hooks.json non trouvé" -ForegroundColor Yellow
 }
 
-# 5. Ajouter les fonctions au profil PowerShell
-Write-Host "[5/5] Configuration du profil PowerShell..." -ForegroundColor Yellow
+# 6. Ajouter les fonctions au profil PowerShell
+Write-Host "[6/6] Configuration du profil PowerShell..." -ForegroundColor Yellow
 $profilePath = $PROFILE
 $profileDir = Split-Path -Parent $profilePath
 
@@ -117,9 +137,15 @@ Write-Host "  Installation terminée !" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Commandes disponibles (après redémarrage du terminal):" -ForegroundColor Cyan
-Write-Host "  stt        - Lancer le GUI STT" -ForegroundColor White
+Write-Host "  sttt       - Lancer le mode systray (recommandé)" -ForegroundColor White
+Write-Host "  stt        - Lancer le GUI STT (fenêtre graphique)" -ForegroundColor White
 Write-Host "  sttstop    - Arrêter tous les processus STT" -ForegroundColor White
 Write-Host "  sttdaemon  - Lancer le daemon (hotkey global)" -ForegroundColor White
 Write-Host "  sttstatus  - Afficher le statut" -ForegroundColor White
+Write-Host ""
+Write-Host "Mode systray (sttt):" -ForegroundColor Cyan
+Write-Host "  - Icône dans la zone de notification" -ForegroundColor Gray
+Write-Host "  - Indicateur 🎤 dans la statusline Claude Code" -ForegroundColor Gray
+Write-Host "  - Clic molette pour enregistrer" -ForegroundColor Gray
 Write-Host ""
 Write-Host "Redémarrez votre terminal pour appliquer les changements." -ForegroundColor Yellow

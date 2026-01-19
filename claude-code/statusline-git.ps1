@@ -105,6 +105,17 @@ if ($current_dir -and (Test-Path $current_dir)) {
     Set-Location $original_location -ErrorAction SilentlyContinue
 }
 
+# STT Status
+$stt_status = ""
+$stt_file = "$env:USERPROFILE\.claude\plugins\claude-stt\status"
+if (Test-Path $stt_file) {
+    $stt_state = (Get-Content $stt_file -Raw).Trim()
+    switch ($stt_state) {
+        "recording"    { $stt_status = " ${RED}🎤${NC}" }
+        "transcribing" { $stt_status = " ${YELLOW}⏳${NC}" }
+    }
+}
+
 # Add session cost if available
 $cost_info = ""
 if ($cost_formatted) {
@@ -118,4 +129,4 @@ $context_info = "${GRAY}${bar}${NC} ${context_percent}%"
 $git_sep = if ($git_info) { " ${GRAY}|${NC}" } else { "" }
 
 # Output the status line
-Write-Host "${BLUE}${dir_name}${NC} ${GRAY}|${NC} ${CYAN}${model_name}${NC} ${GRAY}|${NC} ${context_info}${git_sep}${git_info}${cost_info}" -NoNewline
+Write-Host "${BLUE}${dir_name}${NC} ${GRAY}|${NC} ${CYAN}${model_name}${NC} ${GRAY}|${NC} ${context_info}${git_sep}${git_info}${cost_info}${stt_status}" -NoNewline

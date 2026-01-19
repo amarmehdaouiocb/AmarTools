@@ -8,6 +8,7 @@ $STT_VENV = "C:\Users\amarm\.claude\plugins\cache\jarrodwatts-claude-stt\claude-
 $STT_PYTHON = "$STT_VENV\Scripts\python.exe"
 $STT_PYTHONW = "$STT_VENV\Scripts\pythonw.exe"
 $STT_GUI = "C:\Users\amarm\.claude\plugins\claude-stt\stt_gui.pyw"
+$STT_TRAY = "C:\Users\amarm\.claude\plugins\claude-stt\stt_tray.pyw"
 $STT_PID_FILE = "C:\Users\amarm\.claude\plugins\claude-stt\daemon.pid"
 
 # Helper pour récupérer la fenêtre active
@@ -28,6 +29,17 @@ function Start-STTGUI {
     Start-Process $STT_PYTHONW -ArgumentList "$STT_GUI --hwnd $hwnd" -WindowStyle Hidden
 }
 Set-Alias -Name stt -Value Start-STTGUI
+
+# Lancer le daemon STT en mode systray (icône dans la zone de notification)
+function Start-STTTray {
+    <#
+    .SYNOPSIS
+    Démarre le daemon STT en mode systray avec indicateur dans la statusline Claude Code
+    #>
+    $hwnd = [Win32Focus]::GetForegroundWindow().ToInt64()
+    Start-Process $STT_PYTHONW -ArgumentList "$STT_TRAY --hwnd $hwnd" -WindowStyle Hidden
+}
+Set-Alias -Name sttt -Value Start-STTTray
 
 # Lancer le daemon en arrière-plan
 function Start-STTDaemon {
@@ -62,11 +74,18 @@ function Stop-STT {
     # Tuer tous les processus claude_stt orphelins
     Get-Process -Name python*, pythonw* -ErrorAction SilentlyContinue | ForEach-Object {
         $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$($_.Id)" -ErrorAction SilentlyContinue).CommandLine
-        if ($cmd -and ($cmd -like '*claude_stt*' -or $cmd -like '*stt_gui*')) {
+        if ($cmd -and ($cmd -like '*claude_stt*' -or $cmd -like '*stt_gui*' -or $cmd -like '*stt_tray*')) {
             Write-Host "Arrêt du processus orphelin (PID $($_.Id))..." -ForegroundColor Yellow
             Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
         }
     }
+
+    # Supprimer le fichier de statut pour la statusline
+    $statusFile = "$env:USERPROFILE\.claude\plugins\claude-stt\status"
+    if (Test-Path $statusFile) {
+        Remove-Item $statusFile -Force -ErrorAction SilentlyContinue
+    }
+
     Write-Host "STT arrêté." -ForegroundColor Green
 }
 Set-Alias -Name sttstop -Value Stop-STT
