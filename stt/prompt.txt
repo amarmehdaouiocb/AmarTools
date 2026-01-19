@@ -1,0 +1,18 @@
+# Whisper Prompt - Vocabulaire technique
+# Ajoutez vos termes ici, un par ligne ou séparés par des virgules
+# Les lignes commençant par # sont ignorées
+
+# Git
+git commit, git push, git pull, git merge, git branch, git checkout, git stash, git rebase, pull request, merge request
+
+# Dev
+API, frontend, backend, endpoint, middleware, repository, codebase, refactor, debug, deploy, build, test
+
+# Outils
+Claude Code, PowerShell, terminal, npm, pnpm, bun, node, Python, TypeScript, JavaScript
+
+# Frameworks
+React, Next.js, Vue, Supabase, Prisma, Tailwind
+
+# Commandes
+cd, ls, cat, grep, find, mkdir, rm, mv, cp

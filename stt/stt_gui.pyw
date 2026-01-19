@@ -25,6 +25,9 @@ SILENCE_THRESHOLD = 0.008  # Seuil de silence
 SILENCE_DURATION = 1.0     # Secondes de silence avant arrêt auto
 CHUNK_SIZE = 1024
 
+# Chemin du fichier de prompt pour Whisper (vocabulaire technique)
+PROMPT_FILE = os.path.join(os.path.expanduser("~"), ".claude", "plugins", "claude-stt", "prompt.txt")
+
 # Windows API pour focus et moniteurs
 user32 = ctypes.windll.user32
 shcore = ctypes.windll.shcore
@@ -66,6 +69,7 @@ class STTApp:
 
         # Whisper model (lazy load)
         self._model = None
+        self._whisper_prompt = self._load_prompt()
 
         self._create_ui()
         self._position_window()
@@ -92,6 +96,23 @@ class STTApp:
     def _capture_my_hwnd(self):
         """Capture le HWND de notre propre fenêtre GUI"""
         self.my_hwnd = user32.GetForegroundWindow()
+
+    def _load_prompt(self):
+        """Charge le fichier prompt.txt pour le vocabulaire technique Whisper"""
+        try:
+            if os.path.exists(PROMPT_FILE):
+                with open(PROMPT_FILE, 'r', encoding='utf-8') as f:
+                    lines = []
+                    for line in f:
+                        line = line.strip()
+                        # Ignorer les commentaires et lignes vides
+                        if line and not line.startswith('#'):
+                            lines.append(line)
+                    prompt = ', '.join(lines)
+                    return prompt if prompt else None
+        except Exception:
+            pass
+        return None
 
     def _track_focus(self):
         """Surveille la fenêtre active et garde la dernière fenêtre externe"""
@@ -372,8 +393,12 @@ class STTApp:
             # Concatenate audio
             audio = np.concatenate(self.audio_data, axis=0).flatten()
 
-            # Transcribe
-            segments, _ = self._model.transcribe(audio, language="fr")
+            # Transcribe avec le prompt technique si disponible
+            transcribe_kwargs = {"language": "fr"}
+            if self._whisper_prompt:
+                transcribe_kwargs["initial_prompt"] = self._whisper_prompt
+
+            segments, _ = self._model.transcribe(audio, **transcribe_kwargs)
             text = " ".join(segment.text.strip() for segment in segments).strip()
 
             if text:
