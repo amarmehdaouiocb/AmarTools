@@ -8,6 +8,14 @@ This file defines my default expectations across all projects. Follow these rule
 Optimize for: **speed + reliability + maintainability**.
 Prefer small, verifiable iterations over big risky changes.
 
+### 🚨 CRITICAL: Code search policy
+**STOP before every code search.** Ask yourself:
+- Exploring/understanding code? → `grepai search` or `grepai trace` (MANDATORY)
+- Exact string match? → `Grep` (OK)
+- File patterns? → `Glob` (OK)
+
+**Violation of this rule = failure.** See section 3.4 for details.
+
 ---
 
 ## 1) Environment (Windows + Claude Code bash)
@@ -36,7 +44,7 @@ Prefer small, verifiable iterations over big risky changes.
 Le hook `command-validator` auto-approuve les commandes composées (`|`, `&&`, `;`) si **toutes** les parties sont des commandes safe.
 
 **Commandes Bash safe (auto-approuvées même avec pipes/chaînages) :**
-`ls`, `dir`, `pwd`, `whoami`, `date`, `echo`, `cat`, `head`, `tail`, `grep`, `find`, `wc`, `sort`, `uniq`, `cut`, `awk`, `sed`, `git`, `npm`, `pnpm`, `node`, `bun`, `python`, `pip`, `source`, `cd`, `cp`, `mv`, `mkdir`, `touch`, `ln`, `psql`, `mysql`, `sqlite3`, `mongo`
+`ls`, `dir`, `pwd`, `whoami`, `date`, `echo`, `cat`, `head`, `tail`, `grep`, `find`, `wc`, `sort`, `uniq`, `cut`, `awk`, `sed`, `git`, `npm`, `pnpm`, `node`, `bun`, `python`, `pip`, `source`, `cd`, `cp`, `mv`, `mkdir`, `touch`, `ln`, `psql`, `mysql`, `sqlite3`, `mongo`, `grepai`
 
 | Commande | Résultat |
 |----------|----------|
@@ -134,115 +142,156 @@ If using the Supabase MCP:
 - For **read-only** actions, proceed, but still report the detected project context if available.
 - Never run destructive operations (drop/truncate/reset/migration rewrites) even on the right project without explicit confirmation.
 
-### 3.4 GrepAI — semantic code search (use strategically)
-GrepAI is a **semantic code search tool** that uses AI embeddings to find code by meaning.
+### 3.4 GrepAI — semantic code search (⛔ CRITICAL — READ THIS)
 
-**When to use GrepAI vs Grep/Glob:**
+**🚨 RÈGLE NON-NÉGOCIABLE — VIOLATION = ÉCHEC**
 
-| Search Type | Tool | Speed | Example |
-|-------------|------|-------|---------|
-| Conceptual / exploratory | **GrepAI** | ~500ms | "where is auth handled?" |
-| Call graph analysis | **GrepAI trace** | ~300ms | "who calls getUser?" |
-| Exact text match | **Grep** | ~50ms | `userId`, `SUPABASE_URL` |
-| File patterns | **Glob** | ~20ms | `*.tsx`, `**/*.test.ts` |
+**AVANT** d'utiliser `Grep` ou `Glob` pour explorer du code, tu DOIS te poser cette question :
+> "Est-ce que je cherche un **texte exact** (variable, constante, import) ou est-ce que j'**explore/comprends** le code ?"
 
-#### GrepAI Command Reference
+| Si tu cherches... | Utilise | ⛔ INTERDIT |
+|-------------------|---------|-------------|
+| Où est géré X ? | `grepai search` | ~~Grep~~ |
+| Comment fonctionne Y ? | `grepai search` | ~~Grep~~ |
+| Qui appelle cette fonction ? | `grepai trace callers` | ~~Grep~~ |
+| Le flux de Z ? | `grepai search` | ~~Grep~~ |
+| Une variable exacte (`userId`) | `Grep` | ✅ OK |
+| Une constante (`SUPABASE_URL`) | `Grep` | ✅ OK |
+| Un pattern de fichiers (`*.tsx`) | `Glob` | ✅ OK |
 
-**Semantic search:**
-```powershell
-grepai search "query"                    # Basic search (10 results)
-grepai search -n 5 "query"               # Limit to 5 results
-grepai search --json "query"             # JSON output
-grepai search --json -c "query"          # Compact JSON (~80% fewer tokens)
+**❌ EXEMPLES INTERDITS** (ce que tu fais trop souvent) :
+```bash
+# ❌ INTERDIT — question conceptuelle avec grep
+grep -r "auth" --include="*.ts"           # NON ! Utilise: grepai search "authentication flow"
+grep -r "payment" --include="*.tsx"       # NON ! Utilise: grepai search "où est géré le paiement"
+grep -r "getUser" .                       # NON ! Utilise: grepai trace callers "getUser"
 ```
 
-**Call graph tracing:**
-```powershell
-grepai trace callers "FunctionName"      # Who calls this function?
-grepai trace callees "FunctionName"      # What functions does it call?
-grepai trace graph "FunctionName"        # Full call graph
-grepai trace graph "Func" --depth 3      # Limit depth
-```
-
-**Index management:**
-```powershell
-grepai status                            # Index status (files, chunks)
-grepai watch                             # Real-time daemon (Ctrl+C to stop)
-grepai init                              # Initialize in new project
-```
-
-**Effective query examples:**
-```powershell
-# Good: conceptual questions
-grepai search "how are errors handled"
-grepai search "user authentication flow"
-grepai search "database connection setup"
-
-# Bad: exact searches (use grep instead)
-grepai search "userId"                   # → Use: grep userId
-grepai search "import { Button }"        # → Use: grep "import { Button }"
-```
-
-#### Prerequisites
-
-| Component | Status | Fix if needed |
-|-----------|--------|---------------|
-| **Ollama** | Auto-start Windows | `ollama serve` |
-| **Model** | `nomic-embed-text` | `ollama pull nomic-embed-text` |
-| **Index** | Persisted in `.grepai/` | `grepai watch` to refresh |
-
-#### Setup for new project
-```powershell
-cd /path/to/project
-grepai init                              # Choose: ollama + gob (defaults)
-grepai watch                             # Wait for indexing, then Ctrl+C
-```
-
-**Rule of thumb:**
-- Exploring/understanding code → GrepAI
-- Looking for specific string → Grep
-- Finding files by name → Glob
-
-#### Daily Workflow
-
-**On Windows boot**: Ollama starts automatically → GrepAI ready.
-
-| Situation | Action |
-|-----------|--------|
-| New Claude session | Nothing to do, index already exists |
-| Conceptual search | `grepai search "how does X work"` |
-| Understand a flow | `grepai trace callers "myFunction"` |
-| Exact text search | `grep "variableName"` (faster) |
-| After major changes | `grepai watch` then Ctrl+C |
-
-**Concrete examples:**
-```powershell
-# Conceptual → GrepAI
-grepai search "where is payment handled"
-grepai search "how does authentication work"
+**✅ EXEMPLES CORRECTS** :
+```bash
+# ✅ Question conceptuelle → GrepAI
+grepai search "comment fonctionne l'authentification"
+grepai search "où sont gérées les notifications"
 grepai trace callers "getAuthedUser"
 
-# Exact → Grep
+# ✅ Recherche exacte → Grep (OK)
 grep "SUPABASE_URL"
 grep "userId"
+grep "import { Button }"
 ```
 
-#### New Project Setup (one-time)
-```powershell
+#### Langage naturel — parle à grepAI comme à un collègue
+
+grepAI est un agent IA. Formule tes questions naturellement, pas comme un moteur de recherche :
+
+| ❌ Mots-clés robotiques | ✅ Question naturelle |
+|-------------------------|----------------------|
+| `"auth token refresh flow"` | `"Comment fonctionne le rafraîchissement du token d'authentification ?"` |
+| `"user payment stripe webhook"` | `"Comment les webhooks Stripe sont gérés pour les paiements utilisateur ?"` |
+| `"error handling api response"` | `"Comment sont gérées les erreurs des réponses API ?"` |
+
+#### Requêtes complexes — paralléliser
+
+Si ta recherche touche **plusieurs parties du codebase**, lance plusieurs `grepai search` en parallèle :
+
+```bash
+# Exemple : comprendre le système d'auth complet
+grepai search "comment fonctionne l'authentification côté frontend"
+grepai search "comment le token est géré côté backend"
+grepai search "comment les sessions sont persistées"
+```
+
+#### ast-grep — recherche structurelle (complément à grepai)
+
+grepai comprend le **sens**, ast-grep comprend la **structure**. Utilise les deux :
+
+| Question | Outil | Exemple |
+|----------|-------|---------|
+| "Où est géré X ?" | `grepai search` | `grepai search "comment fonctionne l'auth"` |
+| "Trouve tous les appels à Y" | `ast-grep` | `ast-grep --pattern 'useAuth()'` |
+| "Fonctions async sans try/catch" | `ast-grep` | `ast-grep --pattern 'async function $F($_) { $$$B }'` |
+| "Pourquoi ce pattern existe ?" | `grepai search` | `grepai search "pourquoi ces fonctions sont async"` |
+
+**Workflow combiné :**
+```bash
+# 1. Localiser conceptuellement (sémantique)
+grepai search "où est géré le paiement Stripe"
+
+# 2. Extraire les patterns (structure)
+ast-grep --pattern 'stripe.$METHOD($_)' src/payments/
+```
+
+**Quand utiliser ast-grep seul :**
+- Refactoring automatisé (renommer, restructurer)
+- Trouver des anti-patterns (console.log, any, TODO)
+- Audit de code (fonctions trop longues, imports inutilisés)
+
+**📊 Decision tree :**
+```
+Question de l'utilisateur
+    │
+    ├─ Contient "où", "comment", "qui appelle", "flux", "comprendre" ?
+    │   └─→ 🔴 GREPAI OBLIGATOIRE
+    │
+    ├─ Cherche un **pattern syntaxique** (appels, structures, refactoring) ?
+    │   └─→ 🟣 ast-grep
+    │
+    ├─ Cherche un mot-clé exact, variable, import, constante ?
+    │   └─→ 🟢 Grep OK
+    │
+    └─ Cherche des fichiers par pattern ?
+        └─→ 🟢 Glob OK
+```
+
+---
+
+#### Commandes avancées (référence)
+
+```bash
+# Recherche avec JSON compact (économise des tokens)
+grepai search --json -c "query"
+
+# Call graph avec profondeur limitée
+grepai trace graph "Function" --depth 3
+
+# Gestion de l'index
+grepai status                  # État de l'index
+grepai watch                   # Réindexer (Ctrl+C quand fini)
+grepai init                    # Initialiser un nouveau projet
+```
+
+#### Prérequis
+
+| Composant | Fix si problème |
+|-----------|-----------------|
+| Ollama | `ollama serve` |
+| Modèle | `ollama pull nomic-embed-text` |
+| Index | `grepai watch` pour rafraîchir |
+
+#### Nouveau projet → Initialiser GrepAI
+
+**OBLIGATOIRE** pour tout nouveau projet dans `C:\Users\amarm\SaaS\` :
+```bash
 cd /path/to/new-project
-grepai init                    # Select: ollama + gob (defaults)
-grepai watch                   # Wait for indexing to complete, then Ctrl+C
-# Done! Index persists in .grepai/
+grepai init      # Choisir: ollama + gob
+grepai watch     # Attendre l'indexation, puis Ctrl+C
 ```
 
-#### ⚠️ OBLIGATION : Initialiser GrepAI sur tout nouveau projet
+#### Subagents (Task tool) — IMPORTANT
 
-**RÈGLE STRICTE** : Quand je crée ou clone un nouveau projet dans `C:\Users\amarm\SaaS\` :
-1. **Immédiatement** après la création/clone, exécuter `grepai init` (ollama + gob)
-2. Lancer `grepai watch` pour indexer, puis Ctrl+C
-3. Ne pas commencer le développement avant que GrepAI soit initialisé
+**Les subagents n'héritent PAS des instructions de ce fichier.**
 
-Cette règle s'applique à TOUS les nouveaux projets sans exception.
+Quand tu lances un subagent pour explorer du code :
+- Utilise **`Explore` avec thoroughness "very thorough"** (pas "quick" ou "medium")
+- **Copie-colle les instructions GrepAI** dans le prompt du subagent pour qu'il les respecte
+- Précise explicitement : "Utilise `grepai search` pour les questions conceptuelles, pas Grep"
+
+#### Vérification automatique en début de session
+
+**Au début de chaque session** sur un projet existant, si tu dois faire une recherche conceptuelle :
+1. Vérifie d'abord si `.grepai/` existe avec `ls -la .grepai/ 2>/dev/null || echo "NOT_INITIALIZED"`
+2. Si `NOT_INITIALIZED` → Propose d'initialiser GrepAI avant de continuer
+3. Si l'index existe mais semble ancien (>1 semaine sans commit), suggère `grepai watch`
 
 ---
 
