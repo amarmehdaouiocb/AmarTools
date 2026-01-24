@@ -16,6 +16,12 @@ Prefer small, verifiable iterations over big risky changes.
 
 **Violation of this rule = failure.** See section 3.4 for details.
 
+### 🚨 CRITICAL: UI/UX modifications
+**STOP before any UI/UX change.** You MUST invoke the `frontend-design` skill first.
+- Any component, style, layout, page, form, animation → `frontend-design` (MANDATORY)
+
+**Violation of this rule = failure.** See section 2 for details.
+
 ---
 
 ## 1) Environment (Windows + Claude Code bash)
@@ -111,11 +117,35 @@ Le hook auto-approuve aussi les outils Claude Code natifs :
 
 ---
 
-## 2) UX/UI policy — use `frontend-design` for UI/UX tasks
-For any UI/UX work (layout, styling, components, pages, landing, dashboard, forms, responsive, typography, spacing, colors, animations, a11y):
-- ALWAYS use the `frontend-design` skill/plugin.
-- If `frontend-design` is unavailable, still apply its principles: premium hierarchy, consistent spacing scale, polished states (hover/focus/disabled/loading), empty/error states, accessibility.
-- Prefer reusable components/tokens over ad-hoc CSS.
+## 2) UX/UI policy — use `frontend-design` skill (⛔ OBLIGATOIRE)
+
+**🚨 RÈGLE NON-NÉGOCIABLE — TOUJOURS UTILISER LE SKILL `frontend-design`**
+
+**AVANT** de modifier quoi que ce soit lié à l'UI/UX, tu DOIS invoquer le skill `frontend-design`.
+
+| Type de modification | Action |
+|---------------------|--------|
+| Nouveau composant UI | ✅ `frontend-design` OBLIGATOIRE |
+| Modification de styles | ✅ `frontend-design` OBLIGATOIRE |
+| Layout / responsive | ✅ `frontend-design` OBLIGATOIRE |
+| Pages / landing / dashboard | ✅ `frontend-design` OBLIGATOIRE |
+| Formulaires | ✅ `frontend-design` OBLIGATOIRE |
+| Animations / transitions | ✅ `frontend-design` OBLIGATOIRE |
+| Accessibilité (a11y) | ✅ `frontend-design` OBLIGATOIRE |
+| Couleurs / typography / spacing | ✅ `frontend-design` OBLIGATOIRE |
+
+**Comment invoquer :**
+```
+Skill: frontend-design
+```
+
+**Si `frontend-design` est indisponible**, applique ses principes :
+- Premium hierarchy (visual weight)
+- Consistent spacing scale (4px, 8px, 12px, 16px, 24px, 32px...)
+- Polished states (hover/focus/disabled/loading)
+- Empty/error states
+- Accessibility (WCAG)
+- Reusable components/tokens over ad-hoc CSS
 
 ---
 
