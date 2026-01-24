@@ -256,6 +256,14 @@ ast-grep --pattern 'stripe.$METHOD($_)' src/payments/
 - Trouver des anti-patterns (console.log, any, TODO)
 - Audit de code (fonctions trop longues, imports inutilisés)
 
+**⚠️ Niveau d'obligation :**
+| Outil | Niveau | Raison |
+|-------|--------|--------|
+| **grepai** | 🔴 OBLIGATOIRE | Remplace Grep pour l'exploration |
+| **ast-grep** | 🟡 RECOMMANDÉ | Complément spécialisé pour patterns AST |
+
+> **💡 Astuce** : Pour du refactoring ou de l'audit de code, pense à `ast-grep` — plus précis que grepai pour les patterns syntaxiques.
+
 **📊 Decision tree :**
 ```
 Question de l'utilisateur
